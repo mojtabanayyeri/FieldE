@@ -30,8 +30,58 @@ def artanh(x):
 def tanh(x):
     return x.clamp(-15, 15).tanh()
 
+def cosh(x):
+    return x.clamp(-15, 15).cosh()
+
+def sinh(x):
+    return x.clamp(-15, 15).sinh()
 
 # ################# HYP OPS ########################
+
+
+def LorInner(x, y):
+    xy_prod = x*y
+    out = torch.sum(xy_prod, dim = 1) - 2*xy_prod[:,0]
+    clampedout = torch.clamp(out, min = 1e-5)
+    return out, clampedout
+
+def LorentzNorm(x):
+    nonclampledlorNorm, lorNorm = LorInner(x,x)
+    lNorm = lorNorm.sqrt()
+    return lorNorm
+
+def expmapH(e, u, c):
+    """Exponential map taken at the origin of the Poincare ball with curvature c.    
+    Args:    
+    u: torch.Tensor of size B x d with hyperbolic points    
+    c: torch.Tensor of size 1 or B x 1 with absolute hyperbolic curvatures
+    
+    Returns:    
+    torch.Tensor with tangent points.    
+    """
+
+    sqrt_c = c ** 0.5
+    u_norm = LorentzNorm(u).unsqueeze(1)
+    gamma_1 = cosh(sqrt_c * u_norm) * e + u * sinh(sqrt_c * u_norm) / (sqrt_c * u_norm)
+    return gamma_1
+
+def expmapP(e, u, c):
+    """Exponential map taken at the origin of the Poincare ball with curvature c.    
+    Args:    
+    u: torch.Tensor of size B x d with hyperbolic points    
+    c: torch.Tensor of size 1 or B x 1 with absolute hyperbolic curvatures
+    
+    Returns:    
+    torch.Tensor with tangent points.    
+    """
+
+    e_norm = e.norm(dim=-1, p=2, keepdim=True)
+    sqrt_c = c ** 0.5
+    u_norm = u.norm(dim=-1, p=2, keepdim=True).clamp_min(MIN_NORM)
+    lam = 2.0/(1-c*torch.pow(e_norm,2))
+    gamma_1 = tanh(lam*sqrt_c * u_norm/2.0) * u / (sqrt_c * u_norm)
+    return mobius_add(e, gamma_1, c)
+
 
 def expmap0(u, c):
     """Exponential map taken at the origin of the Poincare ball with curvature c.
@@ -80,6 +130,23 @@ def project(x, c):
     cond = norm > maxnorm
     projected = x / norm * maxnorm
     return torch.where(cond, projected, x)
+
+def projectH(x, c):
+    """Project points to Poincare ball with curvature c.
+
+    Args:
+        x: torch.Tensor of size B x d with hyperbolic points
+        c: torch.Tensor of size 1 or B x 1 with absolute hyperbolic curvatures
+
+    Returns:
+        torch.Tensor with projected hyperbolic points.
+    """
+    norm = LorentzNorm(x)
+    eps = BALL_EPS[x.dtype]
+    maxnorm = (1 - eps) / (c ** 0.5)
+
+    projected = x / norm.unsqueeze(1) * maxnorm
+    return projected
 
 
 def mobius_add(x, y, c):
