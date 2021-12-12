@@ -1,6 +1,6 @@
-# Hyperbolic Knowledge Graph Embedding 
+# FieldE
 
-This code is the official PyTorch implementation of [Low-Dimensional Hyperbolic Knowledge Graph Embeddings](https://arxiv.org/abs/2005.00545) [6] as well as multiple state-of-the-art KG embedding models which can be trained for the link prediction task. A Tensorflow implementation is also available at: [https://github.com/tensorflow/neural-structured-learning/tree/master/research/kg_hyp_emb](https://github.com/tensorflow/neural-structured-learning/tree/master/research/kg_hyp_emb)
+This is the code for implementation of [Knowledge Graph Representation Learning usingOrdinary Differential Equations](https://aclanthology.org/2021.emnlp-main.750.pdf) (EMNLP 2021).
 
 ## Library Overview
 
