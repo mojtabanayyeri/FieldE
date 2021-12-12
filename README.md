@@ -32,7 +32,7 @@ This implementation includes the following models:
 
 ## Installation
 
-The starting point is to install KGEmb framework. First, create a python 3.7 environment and install dependencies:
+The starting point is to install KGEmb framework. To this end, first, create a python 3.7 environment and install dependencies:
 
 ```bash
 virtualenv -p python3.7 hyp_kg_env
