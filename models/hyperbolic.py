@@ -6,9 +6,9 @@ from torch import nn
 
 from models.base import KGModel
 from utils.euclidean import givens_rotations, givens_reflection
-from utils.hyperbolic import mobius_add, expmap0, project, hyp_distance_multi_c
+from utils.hyperbolic import mobius_add, expmap0, project, hyp_distance_multi_c, expmapP, expmapH, projectH
 
-HYP_MODELS = ["RotH", "RefH", "AttH"]
+HYP_MODELS = ["RotH", "RefH", "AttH", "FieldP", "FieldH"]
 
 
 class BaseH(KGModel):
@@ -39,6 +39,82 @@ class BaseH(KGModel):
         """Compute similarity scores or queries against targets in embedding space."""
         lhs_e, c = lhs_e
         return - hyp_distance_multi_c(lhs_e, rhs_e, c, eval_mode) ** 2
+
+###############################################
+#########FieldE on Poincare Ball###############
+###############################################
+
+class FieldP(BaseH):
+    """https://aclanthology.org/2021.emnlp-main.750.pdf"""
+    def __init__(self, args):
+        super(FieldP, self).__init__(args)
+        torch.set_default_dtype(self.data_type)
+        self.args = args
+        self.hidrank = 150
+
+        self.hidden_embedding = nn.Sequential(
+                nn.Linear(self.rank, self.hidrank),
+                #nn.Tanh(),
+                #nn.Linear(self.hidrank,self.hidrank),
+                nn.ReLU())
+
+        self.rel_emb = nn.Parameter(2*torch.rand(self.sizes[1], self.hidrank * self.rank) - 1.0)
+        self.sim = "dist"
+
+    def get_queries(self, queries):
+        c = F.softplus(self.c[queries[:, 1]])
+        head_e = self.entity(queries[:, 0])
+        head_e = project(head_e, c)
+        rel_e = torch.index_select(
+                self.rel_emb,
+                dim=0,
+                index=queries[:, 1]
+                ).cuda(self.args.cuda_n)
+
+        headHidden = self.hidden_embedding(head_e).cuda(self.args.cuda_n)
+        relation = rel_e.view(rel_e.size()[0], self.rank, self.hidrank)
+        relationh = torch.einsum('ijk,ik->ij', [relation, headHidden])
+        relationh1 = torch.tanh(relationh)
+        lhs_e = expmapP(head_e, relationh1, c)
+        lhs_biases = self.bh(queries[:, 0])
+        return (lhs_e, c), lhs_biases
+    
+###############################################
+#########FieldE on Hyperboloid#################
+###############################################
+
+class FieldH(BaseH):
+    """https://aclanthology.org/2021.emnlp-main.750.pdf"""
+    def __init__(self, args):
+        super(FieldH, self).__init__(args)
+        torch.set_default_dtype(self.data_type)
+        self.args = args
+        self.hidrank = 150
+        self.hidden_embedding = nn.Sequential(
+                nn.Linear(self.rank, self.hidrank),
+                nn.ReLU())
+
+        self.rel_emb = nn.Parameter(2*torch.rand(self.sizes[1], self.hidrank * self.rank) - 1.0)
+        self.sim = "dist"
+
+    def get_queries(self, queries):
+        c = F.softplus(self.c[queries[:, 1]])
+        head_e = self.entity(queries[:, 0])
+        head_e = projectH(head_e, c)
+        rel_e = torch.index_select(
+                self.rel_emb,
+                dim=0,
+                index=queries[:, 1]
+                ).cuda(self.args.cuda_n)
+
+        headHidden = self.hidden_embedding(head_e).cuda(self.args.cuda_n)
+        relation = rel_e.view(rel_e.size()[0], self.rank, self.hidrank)
+        relationh = torch.einsum('ijk,ik->ij', [relation, headHidden])
+        relationh1 = torch.tanh(relationh)
+        lhs_e = expmapH(head_e, relationh, c)
+        lhs_biases = self.bh(queries[:, 0])
+        return (lhs_e, c), lhs_biases
+    
 
 
 class RotH(BaseH):
