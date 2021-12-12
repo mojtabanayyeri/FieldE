@@ -83,6 +83,9 @@ parser.add_argument(
     "--multi_c", action="store_true", help="Multiple curvatures per relation"
 )
 
+parser.add_argument(
+    "--cuda_n", default=3, type=int, help="Cuda core number"
+)
 
 def train(args):
     save_dir = get_savedir(args.model, args.dataset)
