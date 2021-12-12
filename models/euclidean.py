@@ -6,7 +6,7 @@ from torch import nn
 from models.base import KGModel
 from utils.euclidean import euc_sqdistance, givens_rotations, givens_reflection
 
-EUC_MODELS = ["TransE", "CP", "MurE", "RotE", "RefE", "AttE"]
+EUC_MODELS = ["TransE", "CP", "MurE", "RotE", "RefE", "AttE", "FieldE"]
 
 
 class BaseE(KGModel):
@@ -40,7 +40,50 @@ class BaseE(KGModel):
             score = - euc_sqdistance(lhs_e, rhs_e, eval_mode)
         return score
 
+###########################################
+#########FieldE_Euclidean##################
+###########################################
 
+class FieldE(BaseE):
+    """https://aclanthology.org/2021.emnlp-main.750.pdf"""
+
+    def __init__(self, args):
+        super(FieldE, self).__init__(args)
+        self.args = args
+        torch.set_default_dtype(self.data_type)
+        self.hidrank = 150
+        self.hidden_embedding = nn.Sequential(
+                        nn.Linear(self.rank, self.hidrank),
+                        #nn.Tanh(),
+                        #nn.Linear(self.hidrank,self.hidrank),
+                        nn.ReLU())
+        self.rel_emb = nn.Parameter(2*torch.rand(self.sizes[1], self.hidrank * self.rank) - 1.0)
+        self.hidden_embedding.apply(self.weights_init)
+
+        self.sim = "dist"
+
+    def get_queries(self, queries):
+        head_e = self.entity(queries[:, 0])
+        rel_e = torch.index_select(
+                self.rel_emb,
+                dim=0,
+                index=queries[:, 1]
+            ).cuda(self.args.cuda_n)
+
+        headHidden = self.hidden_embedding(head_e).cuda(self.args.cuda_n)
+
+        relation = rel_e.view(rel_e.size()[0], self.rank, self.hidrank)
+        relationh = torch.einsum('ijk,ik->ij', [relation, headHidden])
+        relationh1 = torch.tanh(relationh)
+        lhs_e = head_e + relationh1
+        lhs_biases = self.bh(queries[:, 0])
+        return lhs_e, lhs_biases
+
+    def weights_init(self, m):
+        if isinstance(m, nn.Linear):
+           torch.nn.init.xavier_uniform_(m.weight)
+           torch.nn.init.zeros_(m.bias)
+    
 class TransE(BaseE):
     """Euclidean translations https://www.utc.fr/~bordesan/dokuwiki/_media/en/transe_nips13.pdf"""
 
