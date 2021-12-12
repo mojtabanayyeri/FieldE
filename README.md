@@ -20,16 +20,19 @@ This implementation includes the following models:
 *   RotE [6]
 *   RefE [6]
 *   AttE [6]
+*   FieldE [7]
 
 #### Hyperbolic embeddings:
 
 *   RotH [6]
 *   RefH [6]
 *   AttH [6]
+*   FieldP [7]
+*   FieldH [7]
 
 ## Installation
 
-First, create a python 3.7 environment and install dependencies:
+The starting point is to install kbc framework. First, create a python 3.7 environment and install dependencies:
 
 ```bash
 virtualenv -p python3.7 hyp_kg_env
