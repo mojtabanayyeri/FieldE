@@ -175,6 +175,10 @@ class KGModel(nn.Module, ABC):
                 for i, query in enumerate(these_queries):
                     filter_out = filters[(query[0].item(), query[1].item())]
                     filter_out += [queries[b_begin + i, 2].item()]
+                    
+                    if query[0].item() != query[2].item():
+                       filter_out += [queries[b_begin + i, 0].item()]
+                    
                     scores[i, torch.LongTensor(filter_out)] = -1e6
                 ranks[b_begin:b_begin + batch_size] += torch.sum(
                     (scores >= targets).float(), dim=1
