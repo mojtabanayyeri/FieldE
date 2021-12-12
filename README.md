@@ -61,7 +61,7 @@ To train and evaluate a KG embedding model for the link prediction task, use the
 
 ```bash
 usage: run.py [-h] [--dataset {FB15K,WN,WN18RR,FB237,YAGO3-10}]
-              [--model {TransE,CP,MurE,RotE,RefE,AttE,RotH,RefH,AttH,ComplEx,RotatE}]
+              [--model {TransE,CP,MurE,RotE,RefE,AttE,RotH,RefH,AttH,ComplEx,RotatE, FieldE, FieldP, FieldH}]
               [--regularizer {N3,N2}] [--reg REG]
               [--optimizer {Adagrad,Adam,SGD,SparseAdam,RSGD,RAdam}]
               [--max_epochs MAX_EPOCHS] [--patience PATIENCE] [--valid VALID]
@@ -77,7 +77,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --dataset {FB15K,WN,WN18RR,FB237,YAGO3-10}
                         Knowledge Graph dataset
-  --model {TransE,CP,MurE,RotE,RefE,AttE,RotH,RefH,AttH,ComplEx,RotatE}
+  --model {TransE,CP,MurE,RotE,RefE,AttE,RotH,RefH,AttH,ComplEx,RotatE, FieldE, FieldP, FieldH}
                         Knowledge Graph embedding model
   --regularizer {N3,N2}
                         Regularizer
@@ -108,45 +108,9 @@ optional arguments:
   --multi_c             Multiple curvatures per relation
 ```
 
-## Examples 
-
-We provide example scripts with hyper-parameters for WN18RR in the examples/ folder. For dimensions 32 and 500, these models should achieve the following test MRRs:
-
-|   model    | rank |  MRR  | H@10 |
-|------------|------|-------|------|
-| ComplEx-N3 |  32  | .407  | .449 |
-| ComplEx-N3 | 500  | .477  | .572 |
-|    RotE    |  32  | .455  | .527 |
-|    RotE    | 500  | .494  | .587 |
-|    RotH    |  32  | .473  | .551 |
-|    RotH    | 500  | .489  | .581 |
-
-## New models
-
-To add a new (complex/hyperbolic/Euclidean) Knowledge Graph embedding model, implement the corresponding query embedding under models/, e.g.:
-
-```
-def get_queries(self, queries):
-    head_e = self.entity(queries[:, 0])
-    rel_e = self.rel(queries[:, 1])
-    lhs_e = ### Do something here ###
-    lhs_biases = self.bh(queries[:, 0])
-    return lhs_e, lhs_biases
-```
-
 ## Citation
 
-If you use the codes, please cite the following paper [6]:
-
-```
-@inproceedings{chami2020low,
-  title={Low-Dimensional Hyperbolic Knowledge Graph Embeddings},
-  author={Chami, Ines and Wolf, Adva and Juan, Da-Cheng and Sala, Frederic and Ravi, Sujith and R{\'e}, Christopher},
-  booktitle={Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics},
-  pages={6901--6914},
-  year={2020}
-}
-```
+If you use the codes, please cite the following paper [6][7]:
 
 ## References
 
